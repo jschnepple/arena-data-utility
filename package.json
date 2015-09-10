@@ -1,0 +1,10 @@
+{
+  "dependencies": {
+    "async": "^1.4.2",
+    "body-parser": "^1.13.3",
+    "express": "^4.13.3",
+    "line-reader": "^0.2.4",
+    "morgan": "^1.6.1",
+    "multer": "^1.0.3"
+  }
+}
