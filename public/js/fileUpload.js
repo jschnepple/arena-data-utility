@@ -1,3 +1,4 @@
+/*
 $(function() {
   function fileInfo(e) {
     var file = e.target.files[0];
@@ -131,3 +132,4 @@ $(function() {
   document.getElementById('the_form').addEventListener('submit', handleFileSelect, false);
   document.getElementById('the_file').addEventListener('change', fileInfo, false);
 });
+*/

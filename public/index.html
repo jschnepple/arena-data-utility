@@ -1,96 +1,214 @@
 <!doctype html>
 <html class="no-js" lang="">
-    <head>
-        <meta charset="utf-8">
-        <meta http-equiv="x-ua-compatible" content="ie=edge">
-        <title>Arena API - Data Loading Utility</title>
-        <meta name="description" content="">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <link rel="apple-touch-icon" href="apple-touch-icon.png">
-        <!-- Place favicon.ico in the root directory -->
-        <link rel="stylesheet" href="css/normalize.css">
-        <link rel="stylesheet" href="css/main.css">
-        <script src="js/vendor/modernizr-2.8.3.min.js"></script>
-    </head>
-    <body>
-        <!--[if lt IE 8]>
-        <p class="browserupgrade">You are using an <strong>outdated</strong> browser. Please <a href="http://browsehappy.com/">upgrade your browser</a> to improve your experience.</p>
-        <![endif]-->
-        <!-- Add your site or application content here -->
-        <div class="header">
-            <h1 class="title">Arena API - Data Importing Utility</h1>
-            <div class="subtitle">Post items and their attributes to a client's workspace in bulk</div>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <title>Arena API - Data Loading Utility</title>
+    <meta name="description" content="">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <!-- Place favicon.ico in the root directory -->
+    <link rel="stylesheet" href="css/normalize.css">
+    <link rel="stylesheet" href="css/main.css">
+    <script src="js/vendor/modernizr-2.8.3.min.js"></script>
+    <script src="js/socket.io.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+    <script>window.jQuery || document.write('<script src="js/vendor/jquery-1.11.3.min.js"><\/script>')</script>
+    <script src="js/bootstrap.min.js"></script>
+    <script src="js/jquery.bootpag.min.js"></script>
+    <link rel="stylesheet" href="css/bootstrap.min.css">
+</head>
+<body>
+<!--[if lt IE 8]>
+<p class="browserupgrade">You are using an <strong>outdated</strong> browser. Please <a href="http://browsehappy.com/">upgrade your browser</a> to improve your experience.</p>
+<![endif]-->
+<!-- Add your site or application content here -->
+<div class="header">
+    <h1 class="title">Arena API - Data Importing Utility</h1>
+    <div class="subtitle">Post items and their attributes to a client's workspace in bulk</div>
+</div>
+<form enctype="multipart/form-data" action="/postFile" method="post" id="the_form">
+    <div id="step1" class="step">
+        <div class="number">Step 1 - Workspace Credentials</div>
+        <ul class="credentials">
+            <li><label>API URL:</label><input name="url" type="text" disabled value="https://api.arenasolutions.com/v1/"></li>
+            <li><label>Email:</label><input name="email" type="text" value="schnepple@gmail.com"></li>
+            <li><label>Password:</label><input name="password" type="password" value="Arena123"></li>
+            <li>
+                <label>Workspace ID:</label>
+                <input name="workspaceID" type="text" value="896745670">
+                <input id="clientId" name="clientId" type="text" value="" style="display:none;">
+            </li>
+            <li><label>Log API Calls:</label><input type="checkbox" style="width:20px;"></li>
+        </ul>
+    </div>
+    <div id="step2" class="step">
+        <div class="number">Step 2 - Upload CSV</div>
+        <input style="padding-left: 75px; display:block; margin:0 auto;" type="file" name="csv" id="the_file" required="required" accept=".csv"/>
+        <input type="submit" value="Post Items to Workspace" class="btn" style="display:block; margin:20px auto;" />
+        <span class="helper exec-button">Clicking this will post all items to the specified workspace</span>
+    </div>
+</form>
+<div id="step3" class="step">
+    <div class="number">Step 3 - Progress</div>
+    <div class="results">
+        <div id='status-message' style="display:none;">Status: Uploading</div>
+        <span class="results-label">Current Item:</span><span id="currentItem" class="current">0</span> / <span id="results" class="total">0</span>
+        <span class="results-label">Rows Passed:</span><span id="passedRows" class="current">0</span>
+        <span class="results-label">Rows Failed:</span><span id="failedRows" class="current">0</span>
+    </div>
+
+</div>
+<div id="step4" class="step errors">
+    <div class="number">Errors</div>
+    <div class="results">
+        <span class="results-label">Number of Errors:</span><span id="numberErrors" class="current">0</span>
+        <!--    <table style="width:90%;margin:auto;margin-top:2.5rem;display:none;">
+                <tbody id="error-body">
+                    <tr>
+                        <th>Item Number</th>
+                        <th>Item Name</th>
+                        <th>Error</th>
+                    </tr>
+                    <tr class='clone-row'>
+                        <td>Power Supply, US</td>
+                        <td>Smith</td>
+                        <td>No Category</td>
+                    </tr>
+                </tbody>
+            </table>-->
+        <!-- <button id="download-button" style="
+         display: none;
+         margin: auto;
+         margin-top: 2.5em;
+         ">Download Failed Rows</button>-->
+
+
+        <div id="errorCsv"></div>
+
+        <div id="content">
+            <table id ="errorTable" style="display:none;" class="table table-striped">
+                <tbody id="error-body">
+
+                </tbody>
+            </table>
         </div>
-        <form enctype="multipart/form-data" action="/fileUpload" method="post" id="the_form">
-            <div id="step1" class="step">
-                <div class="number">Step 1 - Workspace Credentials</div>
-                <ul class="credentials">
-                    <li><label>API URL:</label><input name="url" type="text" disabled value="https://api.arenasolutions.com/v1/"></li>
-                    <li><label>Email:</label><input name="email" type="text" value="schnepple@gmail.com"></li>
-                    <li><label>Password:</label><input name="password" type="password" value="Arena123"></li>
-                    <li>
-                        <label>Workspace ID:</label>
-                        <input name="workspaceID" type="text" value="896745670">
-                        <input id="clientId" name="clientId" type="text" value="" style="display:none;">
-                    </li>
-                    <li><label>Log API Calls:</label><input type="checkbox" style="width:20px;"></li>
-                </ul>
-            </div>
-            <div id="step2" class="step">
-                <div class="number">Step 2 - Upload CSV</div>
-                <input style="padding-left: 75px; display:block; margin:0 auto;" type="file" name="csv" id="the_file" required="required" accept=".csv"/>
-                <input type="submit" value="Post Items to Workspace" class="btn" style="display:block; margin:20px auto;" />
-                <span class="helper exec-button">Clicking this will post all items to the specified workspace</span>
-            </div>
-        </form>
-        <div id="step3" class="step">
-            <div class="number">Step 3 - Progress</div>
-            <div class="results">
-                <div id='status-message' style="display:none;">Status: Uploading</div>
-                <span class="results-label">Current Item:</span><span id="currentItem" class="current">0</span> / <span id="totalItems" class="total">0</span>
-            </div>
-        </div>
-        <!-- <div id="step4" class="step errors">
-            <div class="number">Errors</div>
-            <div class="results">
-                <span class="results-label">Number of Errors:</span><span id="numberErrors" class="current">0</span>
-                <table style="width:90%;margin:auto;margin-top:2.5rem;display:none;">
-                    <tbody id="error-body">
-                        <tr>
-                            <th>Item Number</th>
-                            <th>Item Name</th>
-                            <th>Error</th>
-                        </tr>
-                        <tr class='clone-row'>
-                            <td>Power Supply, US</td>
-                            <td>Smith</td>
-                            <td>No Category</td>
-                        </tr>
-                    </tbody>
-                </table>
-                <button id="download-button" style="
-                display: none;
-                margin: auto;
-                margin-top: 2.5em;
-                ">Download Failed Rows</button>
-            </div>
-        </div> -->
-        <div class="footer">
-            © 2015 Arena Solutions, Inc.
-        </div>
-        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
-        <script>window.jQuery || document.write('<script src="js/vendor/jquery-1.11.3.min.js"><\/script>')</script>
-        <script src="js/plugins.js"></script>
-        <script src="js/jquery.form.js"></script>
-        <script src="js/main.js"></script>
-        <!-- Google Analytics: change UA-XXXXX-X to be your site's ID. -->
+        <div id="page-selection"></div>
         <script>
-        (function(b,o,i,l,e,r){b.GoogleAnalyticsObject=l;b[l]||(b[l]=
-        function(){(b[l].q=b[l].q||[]).push(arguments)});b[l].l=+new Date;
+            // init bootpag
+            $('#page-selection').bootpag({
+                total: 10
+            }).on("page", function(event, /* page number here */ num){
+               // $("#content").html("Insert content" +num); // some ajax content loading...
+                var html=paginationHtml(num);
+                $("#errorTable").show();
+                $("#error-body").html(html);
+
+            });
+
+        </script>
+    </div>
+</div>
+<div class="footer">
+    © 2015 Arena Solutions, Inc.
+</div>
+
+<script src="js/plugins.js"></script>
+<script src="js/jquery.form.js"></script>
+<script src="js/main.js"></script>
+
+<!-- Google Analytics: change UA-XXXXX-X to be your site's ID. -->
+<script>
+    (function(b,o,i,l,e,r){b.GoogleAnalyticsObject=l;b[l]||(b[l]=
+            function(){(b[l].q=b[l].q||[]).push(arguments)});b[l].l=+new Date;
         e=o.createElement(i);r=o.getElementsByTagName(i)[0];
         e.src='https://www.google-analytics.com/analytics.js';
         r.parentNode.insertBefore(e,r)}(window,document,'script','ga'));
-        ga('create','UA-XXXXX-X','auto');ga('send','pageview');
-        </script>
-    </body>
+    ga('create','UA-XXXXX-X','auto');ga('send','pageview');
+</script>
+<script>
+
+    failedData=[];
+    var socket=io.connect('/');
+    socket.on('totalRows',function(data){
+        $('#results').html(data.length);
+    });
+    socket.on('current', function(data) {
+        $('#currentItem').html(data.rows);
+
+    });
+    socket.on('updatePassed', function(data) {
+        $('#passedRows').html(data.rows);
+
+    });
+    socket.on('updateFailed', function(data) {;
+        $('#failedRows').html(data.rows);
+
+    });
+    socket.on('errorCsv', function(data) {;
+        $('#download-button').show();
+        $('#step4').show();
+
+        console.log("event recieved")
+        console.log(data)
+        failedData=data.failedReasons;
+        $('#numberErrors').html( $('#failedRows').html());
+
+        // prepare CSV data
+        var csvData = new Array();
+        csvData=data.failedRows;
+
+// download stuff
+        var fileName = "data.csv";
+        var buffer = csvData.join("\n");
+        var blob = new Blob([buffer], {
+            "type": "text/csv;charset=utf8;"
+        });
+        var link = document.createElement("a");
+
+        if(link.download !== undefined) { // feature detection
+            // Browsers that support HTML5 download attribute
+            link.setAttribute("href", window.URL.createObjectURL(blob));
+            link.setAttribute("download", fileName);
+        }
+        else {
+            // it needs to implement server side export
+            link.setAttribute("href", "http://www.example.com/export");
+        }
+        link.innerHTML = "Export to CSV";
+        document.body.appendChild(link);
+        $('#errorCsv').append(link);
+        var html=paginationHtml(1);
+        $("#errorTable").show();
+        $("#error-body").html(html);
+
+    });
+    function paginationHtml(num){
+        num=num-1;
+        num=num*10;
+        var limit=num+10;
+        var html="";
+        html=html+'<tr>';
+        html=html+'<th>Row Name</th>';
+        html=html+'<th>rowNumber</th>';
+        html=html+'<th>csvRowNum</th>';
+        html=html+'<th>reason</th>';
+        html=html+'</tr>';
+        for(var i=num;i<failedData.length;i++){
+            if(i==limit){
+                break;
+            }
+            var obj=failedData[i];
+            html=html+'<tr>';
+            html=html+'<td>'+obj['rowName']+'</td>';
+            html=html+'<td>'+obj['rowNumber']+'</td>';
+            html=html+'<td>'+obj['csvRowNum']+'</td>';
+            html=html+'<td>'+obj['reason']+'</td>';
+            html=html+'</tr>';
+        }
+        return html;
+    }
+
+</script>
+</body>
 </html>
